@@ -5,6 +5,7 @@ use crate::Transaction;
 
 #[derive(Debug)]
 pub struct Block {
+    index: usize,
     timestamp: u64,
     pub transactions: Vec<Transaction>,
     pub hash: String,
@@ -13,8 +14,9 @@ pub struct Block {
 }
 
 impl Block {
-    pub fn new(transactions: &Vec<Transaction>) -> Self {
+    pub fn new(index: usize, transactions: &Vec<Transaction>) -> Self {
         let mut new_block = Block {
+            index,
             timestamp: SystemTime::now()
                 .duration_since(SystemTime::UNIX_EPOCH)
                 .unwrap()
@@ -41,15 +43,10 @@ impl Block {
         let mut transactions_string: Vec<String> = vec![];
 
         for transaction in &self.transactions {
-            let from_adress_string = format!(
-                "{}{}",
-                transaction.from_adress, transaction.from_adress
-            );
+            let from_adress_string =
+                format!("{}{}", transaction.from_adress, transaction.from_adress);
 
-            let to_adress_string = format!(
-                "{}{}",
-                transaction.to_adress, transaction.to_adress
-            );
+            let to_adress_string = format!("{}{}", transaction.to_adress, transaction.to_adress);
 
             transactions_string.push(from_adress_string);
             transactions_string.push(to_adress_string);
@@ -57,7 +54,8 @@ impl Block {
         }
 
         let hash_string = format!(
-            "{}{}{}{}",
+            "{}{}{}{}{}",
+            self.index,
             self.timestamp.to_string(),
             transactions_string.join(""),
             self.previous_hash,
@@ -83,8 +81,8 @@ impl fmt::Display for Block {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(
             f,
-            "{:?}, {:#?}, {}, {}",
-            self.timestamp, self.transactions, self.hash, self.previous_hash
+            "{}, {:?}, {:#?}, {}, {}",
+            self.index, self.timestamp, self.transactions, self.hash, self.previous_hash
         )
     }
 }

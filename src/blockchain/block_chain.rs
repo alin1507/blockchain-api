@@ -1,5 +1,5 @@
-use crate::{block::Block, Person, Transaction};
-use std::{fmt, time::SystemTime};
+use crate::{block::Block, Transaction};
+use std::fmt;
 
 pub struct BlockChain {
     pub chain: Vec<Block>,
@@ -22,54 +22,23 @@ impl BlockChain {
     pub fn new() -> Self {
         BlockChain {
             chain: vec![],
-            dificulty: 2,
+            dificulty: 3,
             pending_transactions: vec![],
             mining_reward: 100,
         }
     }
 
-    //TODO: maybe remove this function
-    fn create_genesis_block(transactions: &Vec<Transaction>) -> Block {
-        Block::new(transactions)
-    }
-
-    pub fn get_latest_block(&mut self) -> Option<&Block> {
-        self.chain.last()
-    }
-
-    pub fn get_latest_block_as_mutable(&mut self) -> Option<&mut Block> {
-        self.chain.last_mut()
-    }
-
-    // pub fn add_block(&mut self, transaction: Transaction) {
-    //     let latest_block = self.get_latest_block_as_mutable();
-
-    //     match latest_block {
-    //         Some(latest_block) => {
-    //             let mut new_block = Block::new(transaction);
-
-    //             new_block.set_previous_hash(&latest_block.hash);
-    //             new_block.mine_block(self.dificulty);
-
-    //             self.chain.push(new_block);
-    //         }
-    //         None => {}
-    //     };
-    // }
-
     pub fn mine_pending_transactions(&mut self, mining_reward_address: String) {
+        let latest_block = self.chain.last();
 
-        let latest_block = self.get_latest_block_as_mutable();
+        let mut block = Block::new(self.chain.len(), &self.pending_transactions);
 
-        let mut block = Block::new(&self.pending_transactions);
-
-
-        // match latest_block {
-        //     Some(latest_block) => {
-        //         block.set_previous_hash(&latest_block.hash);
-        //     }
-        //     None => {}
-        // };
+        match latest_block {
+            Some(latest_block) => {
+                block.set_previous_hash(&latest_block.hash);
+            }
+            None => {}
+        };
 
         block.mine_block(self.dificulty);
 
