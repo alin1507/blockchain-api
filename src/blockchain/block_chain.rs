@@ -25,7 +25,14 @@ impl BlockChain {
 
     //TODO: maybe remove this function
     fn create_genesis_block(data: BlockData) -> Block {
-        Block::new(0, SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap().as_secs(), data)
+        Block::new(
+            0,
+            SystemTime::now()
+                .duration_since(SystemTime::UNIX_EPOCH)
+                .unwrap()
+                .as_secs(),
+            data,
+        )
     }
 
     pub fn get_latest_block(&mut self) -> Option<&Block> {
@@ -36,30 +43,44 @@ impl BlockChain {
         self.chain.last_mut()
     }
 
-    pub fn add_block(&mut self, block_data: BlockData) -> Result<(), GenerirError> {
+    pub fn add_block(&mut self, block_data: BlockData) {
         let chain_length = self.chain.len();
         let latest_block = self.get_latest_block_as_mutable();
 
         match latest_block {
             Some(latest_block) => {
-                let mut new_block = Block::new(chain_length, SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap().as_secs(), block_data);
+                let mut new_block = Block::new(
+                    chain_length,
+                    SystemTime::now()
+                        .duration_since(SystemTime::UNIX_EPOCH)
+                        .unwrap()
+                        .as_secs(),
+                    block_data,
+                );
 
                 new_block.set_previous_hash(&latest_block.hash);
                 new_block.set_hash();
 
                 self.chain.push(new_block);
             }
-            None => {
-                return Err(GenerirError {
-                    message: String::from("Genesis block is missing!"),
-                });
-            }
+            None => {}
         };
-
-        Ok(())
     }
 
-    pub fn is_chain_valid(){
+    pub fn is_chain_valid(&self) -> bool {
+        for i in 1..self.chain.len() {
+            let current_block = &self.chain[i];
+            let previous_block = &self.chain[i - 1];
 
+            if current_block.hash != current_block.calculate_hash() {
+                return false;
+            }
+
+            if current_block.previous_hash != previous_block.hash {
+                return false;
+            }
+        }
+
+        true
     }
 }

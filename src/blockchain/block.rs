@@ -77,10 +77,10 @@ impl Block {
     }
 
     pub fn set_hash(&mut self) {
-        self.hash = self.create_hash();
+        self.hash = self.calculate_hash();
     }
 
-    fn create_hash(&self) -> String {
+    pub fn calculate_hash(&self) -> String {
         let sender_string = format!(
             "{}{}",
             self.data.sender.first_name, self.data.sender.last_name
