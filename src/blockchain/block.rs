@@ -1,5 +1,5 @@
 use crypto_hash::{hex_digest, Algorithm};
-use std::{fmt, time::SystemTime};
+use std::fmt;
 
 #[derive(Debug)]
 pub struct Person {
@@ -52,28 +52,57 @@ impl fmt::Display for BlockData {
 #[derive(Debug)]
 pub struct Block {
     index: usize,
-    timestamp: SystemTime,
+    timestamp: u64,
     data: BlockData,
     pub hash: String,
     pub previous_hash: String,
 }
 
 impl Block {
-    pub fn new(index: usize, timestamp: SystemTime, data: BlockData) -> Self {
-        let index_string = index.to_string();
-        let index_str = index_string.as_str();
-
-        Block {
+    pub fn new(index: usize, timestamp: u64, data: BlockData) -> Self {
+        let mut new_block = Block {
             index,
             timestamp,
             data,
-            hash: hex_digest(Algorithm::SHA256, index_str.as_bytes()),
+            hash: String::new(),
             previous_hash: String::new(),
-        }
+        };
+
+        new_block.set_hash();
+        new_block
     }
 
     pub fn set_previous_hash(&mut self, previous_hash: &str) {
         self.previous_hash = previous_hash.to_string();
+    }
+
+    pub fn set_hash(&mut self) {
+        self.hash = self.create_hash();
+    }
+
+    fn create_hash(&self) -> String {
+        let sender_string = format!(
+            "{}{}",
+            self.data.sender.first_name, self.data.sender.last_name
+        );
+        let receiver_string = format!(
+            "{}{}",
+            self.data.receiver.first_name, self.data.receiver.last_name
+        );
+
+        let hash_string = format!(
+            "{}{}{}{}{}{}",
+            self.index.to_string(),
+            self.timestamp.to_string(),
+            self.data.amount_transfered.to_string(),
+            sender_string,
+            receiver_string,
+            self.previous_hash
+        );
+
+        let hash_bytes = hash_string.as_bytes();
+
+        hex_digest(Algorithm::SHA256, hash_bytes)
     }
 }
 

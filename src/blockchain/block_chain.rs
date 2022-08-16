@@ -25,7 +25,7 @@ impl BlockChain {
 
     //TODO: maybe remove this function
     fn create_genesis_block(data: BlockData) -> Block {
-        Block::new(0, SystemTime::now(), data)
+        Block::new(0, SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap().as_secs(), data)
     }
 
     pub fn get_latest_block(&mut self) -> Option<&Block> {
@@ -42,9 +42,10 @@ impl BlockChain {
 
         match latest_block {
             Some(latest_block) => {
-                let mut new_block = Block::new(chain_length, SystemTime::now(), block_data);
+                let mut new_block = Block::new(chain_length, SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap().as_secs(), block_data);
 
                 new_block.set_previous_hash(&latest_block.hash);
+                new_block.set_hash();
 
                 self.chain.push(new_block);
             }
@@ -56,5 +57,9 @@ impl BlockChain {
         };
 
         Ok(())
+    }
+
+    pub fn is_chain_valid(){
+
     }
 }
