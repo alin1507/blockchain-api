@@ -1,8 +1,11 @@
-use crate::block::{Block, BlockData};
+use crate::{block::Block, Person, Transaction};
 use std::{fmt, time::SystemTime};
 
 pub struct BlockChain {
     pub chain: Vec<Block>,
+    dificulty: usize,
+    pending_transactions: Vec<Transaction>,
+    mining_reward: u32,
 }
 
 pub struct GenerirError {
@@ -16,23 +19,18 @@ impl fmt::Display for GenerirError {
 }
 
 impl BlockChain {
-    pub fn new(data: BlockData) -> Self {
-        let gensis_block = BlockChain::create_genesis_block(data);
+    pub fn new() -> Self {
         BlockChain {
-            chain: vec![gensis_block],
+            chain: vec![],
+            dificulty: 2,
+            pending_transactions: vec![],
+            mining_reward: 100,
         }
     }
 
     //TODO: maybe remove this function
-    fn create_genesis_block(data: BlockData) -> Block {
-        Block::new(
-            0,
-            SystemTime::now()
-                .duration_since(SystemTime::UNIX_EPOCH)
-                .unwrap()
-                .as_secs(),
-            data,
-        )
+    fn create_genesis_block(transactions: &Vec<Transaction>) -> Block {
+        Block::new(transactions)
     }
 
     pub fn get_latest_block(&mut self) -> Option<&Block> {
@@ -43,28 +41,68 @@ impl BlockChain {
         self.chain.last_mut()
     }
 
-    pub fn add_block(&mut self, block_data: BlockData) {
-        let chain_length = self.chain.len();
+    // pub fn add_block(&mut self, transaction: Transaction) {
+    //     let latest_block = self.get_latest_block_as_mutable();
+
+    //     match latest_block {
+    //         Some(latest_block) => {
+    //             let mut new_block = Block::new(transaction);
+
+    //             new_block.set_previous_hash(&latest_block.hash);
+    //             new_block.mine_block(self.dificulty);
+
+    //             self.chain.push(new_block);
+    //         }
+    //         None => {}
+    //     };
+    // }
+
+    pub fn mine_pending_transactions(&mut self, mining_reward_address: String) {
+
         let latest_block = self.get_latest_block_as_mutable();
 
-        match latest_block {
-            Some(latest_block) => {
-                let mut new_block = Block::new(
-                    chain_length,
-                    SystemTime::now()
-                        .duration_since(SystemTime::UNIX_EPOCH)
-                        .unwrap()
-                        .as_secs(),
-                    block_data,
-                );
+        let mut block = Block::new(&self.pending_transactions);
 
-                new_block.set_previous_hash(&latest_block.hash);
-                new_block.set_hash();
 
-                self.chain.push(new_block);
+        // match latest_block {
+        //     Some(latest_block) => {
+        //         block.set_previous_hash(&latest_block.hash);
+        //     }
+        //     None => {}
+        // };
+
+        block.mine_block(self.dificulty);
+
+        println!("Block succesfully mined");
+
+        self.chain.push(block);
+        self.pending_transactions = vec![Transaction::new(
+            String::new(),
+            mining_reward_address,
+            self.mining_reward,
+        )];
+    }
+
+    pub fn create_transaction(&mut self, transaction: Transaction) {
+        self.pending_transactions.push(transaction);
+    }
+
+    pub fn get_balance_of_adress(&self, address: String) -> u32 {
+        let mut balance = 0;
+
+        for block in &self.chain {
+            for transaction in &block.transactions {
+                if transaction.from_adress == address {
+                    balance -= transaction.amount_transfered;
+                }
+
+                if transaction.to_adress == address {
+                    balance += transaction.amount_transfered;
+                }
             }
-            None => {}
-        };
+        }
+
+        balance
     }
 
     pub fn is_chain_valid(&self) -> bool {

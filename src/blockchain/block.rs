@@ -1,71 +1,28 @@
 use crypto_hash::{hex_digest, Algorithm};
-use std::fmt;
+use std::{fmt, time::SystemTime};
 
-#[derive(Debug)]
-pub struct Person {
-    first_name: String,
-    last_name: String,
-}
-
-impl Person {
-    pub fn new(first_name: String, last_name: String) -> Self {
-        Person {
-            first_name,
-            last_name,
-        }
-    }
-}
-
-impl fmt::Display for Person {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}, {}", self.first_name, self.last_name)
-    }
-}
-
-#[derive(Debug)]
-pub struct BlockData {
-    amount_transfered: u32,
-    sender: Person,
-    receiver: Person,
-}
-
-impl BlockData {
-    pub fn new(amount_transfered: u32, sender: Person, receiver: Person) -> Self {
-        BlockData {
-            amount_transfered,
-            sender,
-            receiver,
-        }
-    }
-}
-
-impl fmt::Display for BlockData {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(
-            f,
-            "{}, {}, {}",
-            self.amount_transfered, self.sender, self.receiver
-        )
-    }
-}
+use crate::Transaction;
 
 #[derive(Debug)]
 pub struct Block {
-    index: usize,
     timestamp: u64,
-    data: BlockData,
+    pub transactions: Vec<Transaction>,
     pub hash: String,
     pub previous_hash: String,
+    pub nonce: usize,
 }
 
 impl Block {
-    pub fn new(index: usize, timestamp: u64, data: BlockData) -> Self {
+    pub fn new(transactions: &Vec<Transaction>) -> Self {
         let mut new_block = Block {
-            index,
-            timestamp,
-            data,
+            timestamp: SystemTime::now()
+                .duration_since(SystemTime::UNIX_EPOCH)
+                .unwrap()
+                .as_secs(),
+            transactions: transactions.to_vec(),
             hash: String::new(),
             previous_hash: String::new(),
+            nonce: 0,
         };
 
         new_block.set_hash();
@@ -81,28 +38,44 @@ impl Block {
     }
 
     pub fn calculate_hash(&self) -> String {
-        let sender_string = format!(
-            "{}{}",
-            self.data.sender.first_name, self.data.sender.last_name
-        );
-        let receiver_string = format!(
-            "{}{}",
-            self.data.receiver.first_name, self.data.receiver.last_name
-        );
+        let mut transactions_string: Vec<String> = vec![];
+
+        for transaction in &self.transactions {
+            let from_adress_string = format!(
+                "{}{}",
+                transaction.from_adress, transaction.from_adress
+            );
+
+            let to_adress_string = format!(
+                "{}{}",
+                transaction.to_adress, transaction.to_adress
+            );
+
+            transactions_string.push(from_adress_string);
+            transactions_string.push(to_adress_string);
+            transactions_string.push(transaction.amount_transfered.to_string());
+        }
 
         let hash_string = format!(
-            "{}{}{}{}{}{}",
-            self.index.to_string(),
+            "{}{}{}{}",
             self.timestamp.to_string(),
-            self.data.amount_transfered.to_string(),
-            sender_string,
-            receiver_string,
-            self.previous_hash
+            transactions_string.join(""),
+            self.previous_hash,
+            self.nonce.to_string()
         );
 
         let hash_bytes = hash_string.as_bytes();
 
         hex_digest(Algorithm::SHA256, hash_bytes)
+    }
+
+    pub fn mine_block(&mut self, dificulty: usize) {
+        while &self.hash[0..dificulty] != vec!["0"; dificulty].join("") {
+            self.nonce += 1;
+            self.set_hash();
+        }
+
+        println!("Block mined: {}", self.hash);
     }
 }
 
@@ -110,8 +83,8 @@ impl fmt::Display for Block {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(
             f,
-            "{}, {:?}, {}, {}, {}",
-            self.index, self.timestamp, self.data, self.hash, self.previous_hash
+            "{:?}, {:#?}, {}, {}",
+            self.timestamp, self.transactions, self.hash, self.previous_hash
         )
     }
 }
