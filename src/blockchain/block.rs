@@ -1,7 +1,8 @@
 use crypto_hash::{hex_digest, Algorithm};
 use std::{fmt, time::SystemTime};
 
-use crate::Transaction;
+use crate::blockchain::transaction::Transaction;
+
 
 #[derive(Debug)]
 pub struct Block {

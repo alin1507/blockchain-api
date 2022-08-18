@@ -1,4 +1,5 @@
-use crate::{block::Block, Transaction};
+use crate::blockchain::block::Block;
+use crate::blockchain::transaction::Transaction;
 
 pub struct BlockChain {
     pub chain: Vec<Block>,
