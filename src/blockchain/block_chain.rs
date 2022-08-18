@@ -1,28 +1,17 @@
 use crate::{block::Block, Transaction};
-use std::fmt;
 
 pub struct BlockChain {
     pub chain: Vec<Block>,
-    dificulty: usize,
+    difficulty: usize,
     pending_transactions: Vec<Transaction>,
     mining_reward: u32,
-}
-
-pub struct GenerirError {
-    message: String,
-}
-
-impl fmt::Display for GenerirError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", self.message)
-    }
 }
 
 impl BlockChain {
     pub fn new() -> Self {
         BlockChain {
             chain: vec![],
-            dificulty: 3,
+            difficulty: 3,
             pending_transactions: vec![],
             mining_reward: 100,
         }
@@ -40,9 +29,9 @@ impl BlockChain {
             None => {}
         };
 
-        block.mine_block(self.dificulty);
+        block.mine_block(self.difficulty);
 
-        println!("Block succesfully mined");
+        println!("Block successfully mined");
 
         self.chain.push(block);
         self.pending_transactions = vec![Transaction::new(
@@ -56,17 +45,17 @@ impl BlockChain {
         self.pending_transactions.push(transaction);
     }
 
-    pub fn get_balance_of_adress(&self, address: String) -> u32 {
+    pub fn get_balance_of_address(&self, address: String) -> u32 {
         let mut balance = 0;
 
         for block in &self.chain {
             for transaction in &block.transactions {
-                if transaction.from_adress == address {
-                    balance -= transaction.amount_transfered;
+                if transaction.from_address == address {
+                    balance -= transaction.amount;
                 }
 
-                if transaction.to_adress == address {
-                    balance += transaction.amount_transfered;
+                if transaction.to_address == address {
+                    balance += transaction.amount;
                 }
             }
         }

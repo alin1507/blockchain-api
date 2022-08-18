@@ -43,14 +43,14 @@ impl Block {
         let mut transactions_string: Vec<String> = vec![];
 
         for transaction in &self.transactions {
-            let from_adress_string =
-                format!("{}{}", transaction.from_adress, transaction.from_adress);
+            let from_address_string =
+                format!("{}{}", transaction.from_address, transaction.from_address);
 
-            let to_adress_string = format!("{}{}", transaction.to_adress, transaction.to_adress);
+            let to_address_string = format!("{}{}", transaction.to_address, transaction.to_address);
 
-            transactions_string.push(from_adress_string);
-            transactions_string.push(to_adress_string);
-            transactions_string.push(transaction.amount_transfered.to_string());
+            transactions_string.push(from_address_string);
+            transactions_string.push(to_address_string);
+            transactions_string.push(transaction.amount.to_string());
         }
 
         let hash_string = format!(
@@ -67,8 +67,8 @@ impl Block {
         hex_digest(Algorithm::SHA256, hash_bytes)
     }
 
-    pub fn mine_block(&mut self, dificulty: usize) {
-        while &self.hash[0..dificulty] != vec!["0"; dificulty].join("") {
+    pub fn mine_block(&mut self, difficulty: usize) {
+        while &self.hash[0..difficulty] != vec!["0"; difficulty].join("") {
             self.nonce += 1;
             self.set_hash();
         }
