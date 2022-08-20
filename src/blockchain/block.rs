@@ -44,10 +44,15 @@ impl Block {
         let mut transactions_string: Vec<String> = vec![];
 
         for transaction in &self.transactions {
-            let from_address_string =
-                format!("{}{}", transaction.from_address, transaction.from_address);
+            let from_address_string = format!(
+                "{}{}",
+                transaction.from_wallet.address, transaction.from_wallet.address
+            );
 
-            let to_address_string = format!("{}{}", transaction.to_address, transaction.to_address);
+            let to_address_string = format!(
+                "{}{}",
+                transaction.to_wallet.address, transaction.to_wallet.address
+            );
 
             transactions_string.push(from_address_string);
             transactions_string.push(to_address_string);

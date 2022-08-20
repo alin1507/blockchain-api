@@ -1,53 +1,45 @@
-use super::coin::BlockchainError;
-use crate::{
-    api::coin::Coin,
-    blockchain::{block::Block, transaction::Transaction},
+use crate::blockchain::{
+    block::Block,
+    block_chain::{BlockchainError, BLOCKCHAIN},
+    transaction::{TransactionInfo, TransactionError},
+    wallet::{WalletError, WalletInfo, MineRewardAddress},
 };
-use actix_web::{post, web::Json, web::Path, get};
+use actix_web::{get, post, web::Json, web::Path};
 use serde::{Deserialize, Serialize};
 
-#[derive(Deserialize, Serialize)]
-pub struct CoinInfo {
-    name: String,
-    difficulty: usize,
-    mining_reward: u32,
-}
-
-#[derive(Deserialize, Serialize)]
-pub struct CoinIdentifier {
-    coin_name: String,
-}
-
 #[post("/transaction/new")]
-pub async fn new_transaction(transaction: Json<Transaction>) -> Result<String, BlockchainError> {
-    Coin::create_transaction(Transaction::new(
-        transaction.from_address.clone(),
-        transaction.to_address.clone(),
-        transaction.amount,
-    ));
-
-    Ok("Transaction successfully made".to_string())
-}
-
-#[derive(Deserialize, Serialize)]
-pub struct RewardAddress {
-    mining_reward_address: String,
+pub async fn new_transaction(
+    transaction: Json<TransactionInfo>,
+) -> Result<String, TransactionError> {
+    match BLOCKCHAIN.lock().unwrap().create_transaction(transaction.0) {
+        Ok(response) => Ok(response),
+        Err(err) => Err(err),
+    }
 }
 
 #[post("/transaction/mine")]
 pub async fn mine_pending_transactions(
-    reward_address: Json<RewardAddress>,
+    reward_address: Json<MineRewardAddress>,
 ) -> Result<String, BlockchainError> {
-    Coin::mine_pending_transactions(reward_address.mining_reward_address.clone());
-
-    Ok("Transactions successfully mined".to_string())
+    match BLOCKCHAIN
+        .lock()
+        .unwrap()
+        .mine_pending_transactions(&reward_address.mining_reward_address)
+    {
+        Ok(()) => Ok("Transactions successfully mined".to_string()),
+        Err(err) => Err(err),
+    }
 }
 
 #[get("/blockchain/get")]
 pub async fn show_blockchain() -> Result<Json<Vec<Block>>, BlockchainError> {
-    let blockchain = Coin::get_blockchain();
+    let chain = BLOCKCHAIN.lock().unwrap().chain.clone();
 
-    Ok(Json(blockchain))
+    if chain.is_empty() {
+        Err(BlockchainError::ChainIsEmpty)
+    } else {
+        Ok(Json(chain))
+    }
 }
 
 #[derive(Deserialize, Serialize)]
@@ -56,9 +48,28 @@ pub struct AddressIdentifier {
 }
 
 #[get("/balance/{address}")]
-pub async fn get_balance_of_address(address_identifier: Path<AddressIdentifier>) -> Result<String, BlockchainError> {
+pub async fn get_balance_of_address(
+    address_identifier: Path<AddressIdentifier>,
+) -> Result<String, BlockchainError> {
     let address = address_identifier.into_inner().address;
-    let balance = Coin::get_balance_of_address(&address);
+    let balance = BLOCKCHAIN
+        .lock()
+        .unwrap()
+        .get_balance_of_wallet(address.to_string());
 
-    Ok(format!("Balance for wallet {} is: {}", address, balance))
+    match balance {
+        Ok(balance) => Ok(format!("Balance for wallet {} is: {}", address, balance)),
+        Err(err) => Err(err),
+    }
+}
+
+#[post("/wallet/new")]
+pub async fn create_wallet(wallet: Json<WalletInfo>) -> Result<String, WalletError> {
+    let mut blockchain = BLOCKCHAIN.lock().unwrap();
+    let wallet = blockchain.create_wallet(wallet.0);
+
+    match wallet {
+        Ok(msg) => Ok(msg),
+        Err(err) => Err(err),
+    }
 }
