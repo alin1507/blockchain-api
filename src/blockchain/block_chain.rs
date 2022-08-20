@@ -1,25 +1,34 @@
+use serde::{Deserialize, Serialize};
+
 use crate::blockchain::block::Block;
 use crate::blockchain::transaction::Transaction;
 
+#[derive(Deserialize, Serialize, Clone, Debug)]
 pub struct BlockChain {
     pub chain: Vec<Block>,
-    difficulty: usize,
-    pending_transactions: Vec<Transaction>,
-    mining_reward: u32,
+    pub difficulty: usize,
+    pub pending_transactions: Vec<Transaction>,
+    pub mining_reward: u32,
+    pub name: String,
+}
+
+impl Default for BlockChain {
+    fn default() -> Self {
+        Self {
+            chain: vec![],
+            difficulty: 2,
+            pending_transactions: vec![],
+            mining_reward: 100,
+            name: "Blockchain".to_string(),
+        }
+    }
 }
 
 impl BlockChain {
-    pub fn new() -> Self {
-        BlockChain {
-            chain: vec![],
-            difficulty: 3,
-            pending_transactions: vec![],
-            mining_reward: 100,
-        }
-    }
-
     pub fn mine_pending_transactions(&mut self, mining_reward_address: String) {
         let latest_block = self.chain.last();
+
+        println!("{:?}", &self);
 
         let mut block = Block::new(self.chain.len(), &self.pending_transactions);
 
@@ -62,22 +71,5 @@ impl BlockChain {
         }
 
         balance
-    }
-
-    pub fn is_chain_valid(&self) -> bool {
-        for i in 1..self.chain.len() {
-            let current_block = &self.chain[i];
-            let previous_block = &self.chain[i - 1];
-
-            if current_block.hash != current_block.calculate_hash() {
-                return false;
-            }
-
-            if current_block.previous_hash != previous_block.hash {
-                return false;
-            }
-        }
-
-        true
     }
 }

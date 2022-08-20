@@ -1,7 +1,10 @@
+use actix_web::{FromRequest, Error};
 use crypto_hash::{hex_digest, Algorithm};
+use serde::{Deserialize, Serialize};
 use std::fmt;
 
 #[derive(Debug, Clone)]
+#[derive(Deserialize, Serialize)]
 pub struct Transaction {
     pub from_address: String,
     pub to_address: String,

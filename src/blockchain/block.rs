@@ -1,10 +1,10 @@
 use crypto_hash::{hex_digest, Algorithm};
+use serde::{Deserialize, Serialize};
 use std::{fmt, time::SystemTime};
 
 use crate::blockchain::transaction::Transaction;
 
-
-#[derive(Debug)]
+#[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct Block {
     index: usize,
     timestamp: u64,
