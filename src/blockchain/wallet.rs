@@ -4,15 +4,14 @@ use actix_web::{
 };
 use derive_more::Display;
 use serde::{Deserialize, Serialize};
-
-use super::{transaction::Transaction};
+use super::transaction::{TransactionInfo};
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct Wallet {
     pub address: String,
     pub balance: u32,
     pub password: String,
-    transactions: Vec<Transaction>,
+    pub transactions: Vec<TransactionInfo>,
 }
 
 #[derive(Deserialize, Serialize)]
@@ -24,7 +23,7 @@ pub struct WalletInfo {
 
 #[derive(Deserialize, Serialize)]
 pub struct MineRewardAddress {
-    pub mining_reward_address: String
+    pub mining_reward_address: String,
 }
 
 impl Wallet {
@@ -36,19 +35,23 @@ impl Wallet {
             transactions: vec![],
         }
     }
+}
 
-    pub fn check_balance(&self) -> &u32 {
-        &self.balance
-    }
-
-    pub fn see_transactions(&self) -> &Vec<Transaction> {
-        &self.transactions
-    }
-
-    pub fn change_password(&mut self, old_password: String, new_password: String) {
-        if self.password == old_password {
-            self.password = new_password
+impl WalletInfo {
+    pub fn check_wallet_info(&self) -> Result<(), WalletError> {
+        if self.address.is_empty() {
+            return Err(WalletError::EmptyAddress);
         }
+
+        if self.balance < 0 {
+            return Err(WalletError::NegativeBallance);
+        }
+
+        if self.password.is_empty() {
+            return Err(WalletError::EmptyPassword);
+        }
+
+        Ok(())
     }
 }
 
@@ -58,6 +61,8 @@ pub enum WalletError {
     EmptyAddress,
     EmptyPassword,
     WalletAlreadyExists,
+    WalletNotFound,
+    WrongPassword,
 }
 
 impl ResponseError for WalletError {
@@ -73,6 +78,8 @@ impl ResponseError for WalletError {
             WalletError::EmptyAddress => StatusCode::FAILED_DEPENDENCY,
             WalletError::EmptyPassword => StatusCode::FAILED_DEPENDENCY,
             WalletError::WalletAlreadyExists => StatusCode::FAILED_DEPENDENCY,
+            WalletError::WalletNotFound => StatusCode::NOT_FOUND,
+            WalletError::WrongPassword => StatusCode::FAILED_DEPENDENCY,
         }
     }
 }

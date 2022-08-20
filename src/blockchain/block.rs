@@ -6,12 +6,27 @@ use crate::blockchain::transaction::Transaction;
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct Block {
-    index: usize,
-    timestamp: u64,
+    pub index: usize,
+    pub timestamp: u64,
     pub transactions: Vec<Transaction>,
     pub hash: String,
     pub previous_hash: String,
     pub nonce: usize,
+}
+#[derive( Deserialize, Serialize)]
+pub struct BlockInfo {
+    pub index: usize,
+    pub timestamp: u64,
+    pub transactions: Vec<BlockTransaction>,
+    pub hash: String,
+    pub previous_hash: String,
+}
+
+#[derive( Deserialize, Serialize, Debug)]
+pub struct BlockTransaction {
+    pub from: String,
+    pub to: String,
+    pub amount: u32,
 }
 
 impl Block {

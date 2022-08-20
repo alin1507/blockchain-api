@@ -1,4 +1,5 @@
 use std::sync::Mutex;
+use std::vec;
 
 use super::transaction::{TransactionError, TransactionInfo};
 use super::wallet::{Wallet, WalletError, WalletInfo};
@@ -41,7 +42,6 @@ impl Default for BlockChain {
 #[derive(Debug, Display)]
 pub enum BlockchainError {
     NoPendingTransactions,
-    AddressNotFound,
     ChainIsEmpty,
     InvalidRewardAddress,
 }
@@ -56,7 +56,6 @@ impl ResponseError for BlockchainError {
     fn status_code(&self) -> StatusCode {
         match self {
             BlockchainError::NoPendingTransactions => StatusCode::NOT_FOUND,
-            BlockchainError::AddressNotFound => StatusCode::NOT_FOUND,
             BlockchainError::ChainIsEmpty => StatusCode::NOT_FOUND,
             BlockchainError::InvalidRewardAddress => StatusCode::NOT_FOUND,
         }
@@ -67,21 +66,19 @@ impl BlockChain {
     pub fn mine_pending_transactions(
         &mut self,
         mining_reward_address: &String,
-    ) -> Result<(), BlockchainError> {
+    ) -> Result<String, BlockchainError> {
         if self.pending_transactions.is_empty() {
             return Err(BlockchainError::NoPendingTransactions);
         }
 
-        let mining_reward_address = self.get_wallet(mining_reward_address.to_string());
+        let mining_reward_wallet = match self.get_wallet(mining_reward_address) {
+            Some(wallet) => wallet,
+            None => return Err(BlockchainError::InvalidRewardAddress),
+        };
 
-        if mining_reward_address.is_none() {
-            return Err(BlockchainError::InvalidRewardAddress);
-        }
-
-        let latest_block = self.chain.last();
         let mut block = Block::new(self.chain.len(), &self.pending_transactions);
 
-        match latest_block {
+        match self.chain.last() {
             Some(latest_block) => {
                 block.set_previous_hash(&latest_block.hash);
             }
@@ -93,49 +90,48 @@ impl BlockChain {
         self.chain.push(block);
         self.pending_transactions = vec![Transaction::new(
             Wallet::new("".to_string(), 0, "".to_string()),
-            mining_reward_address.unwrap(),
+            mining_reward_wallet,
             self.mining_reward,
         )];
 
-        Ok(())
+        Ok("Transactions successfully mined".to_string())
     }
 
     pub fn create_transaction(
         &mut self,
         transaction: TransactionInfo,
     ) -> Result<String, TransactionError> {
-        if transaction.from_address.is_empty() {
-            return Err(TransactionError::EmptyFromAddress);
+        match transaction.check_transaction_info() {
+            Ok(_) => (),
+            Err(err) => return Err(err),
         }
 
-        if transaction.to_address.is_empty() {
-            return Err(TransactionError::EmptyToAddress);
+        let mut from_wallet = match self.get_wallet(&transaction.from_address) {
+            Some(wallet) => wallet,
+            None => return Err(TransactionError::InvalidFromAddress),
+        };
+
+        if from_wallet.password != transaction.from_password {
+            return Err(TransactionError::WrongFromPassword);
         }
 
-        if transaction.amount <= 0 {
-            return Err(TransactionError::InvalidAmount);
-        }
-
-        let from_wallet = self.get_wallet(transaction.from_address);
-        let to_wallet = self.get_wallet(transaction.to_address);
-
-        if from_wallet.is_none() {
-            return Err(TransactionError::InvalidFromAddress);
-        }
-
-        if to_wallet.is_none() {
-            return Err(TransactionError::InvalidToAddress);
-        }
-
-        let mut from_wallet = from_wallet.unwrap();
-        let mut to_wallet = to_wallet.unwrap();
+        let mut to_wallet = match self.get_wallet(&transaction.to_address) {
+            Some(wallet) => wallet,
+            None => return Err(TransactionError::InvalidToAddress),
+        };
 
         if from_wallet.balance < transaction.amount {
             return Err(TransactionError::NotEnoughMoney);
-        }
+        };
 
-        from_wallet.balance -= transaction.amount;
-        to_wallet.balance += transaction.amount;
+        from_wallet.balance -=transaction.amount;
+        to_wallet.balance +=transaction.amount;
+
+        from_wallet.transactions.push(transaction.clone());
+        to_wallet.transactions.push(transaction.clone());
+
+        self.update_wallet(from_wallet.clone())?;
+        self.update_wallet(to_wallet.clone())?;
 
         let new_transaction = Transaction::new(from_wallet, to_wallet, transaction.amount);
         self.pending_transactions.push(new_transaction);
@@ -144,55 +140,71 @@ impl BlockChain {
     }
 
     pub fn create_wallet(&mut self, wallet: WalletInfo) -> Result<String, WalletError> {
-        if wallet.address.is_empty() {
-            return Err(WalletError::EmptyAddress);
+        match wallet.check_wallet_info() {
+            Ok(_) => (),
+            Err(err) => return Err(err),
         }
 
-        if wallet.balance < 0 {
-            return Err(WalletError::NegativeBallance);
-        }
-
-        if wallet.password.is_empty() {
-            return Err(WalletError::EmptyPassword);
-        }
-
-        for blockchain_wallet in &self.wallets {
-            if blockchain_wallet.address == wallet.address {
-                return Err(WalletError::WalletAlreadyExists);
-            }
+        match self.get_wallet(&wallet.address) {
+            Some(_) => return Err(WalletError::WalletAlreadyExists),
+            None => (),
         }
 
         let new_wallet = Wallet::new(wallet.address, wallet.balance as u32, wallet.password);
-
         self.wallets.push(new_wallet);
 
         Ok("Wallet created!".to_string())
     }
 
-    pub fn get_balance_of_wallet(&self, address: String) -> Result<u32, BlockchainError> {
-        let mut balance = 0;
-        let mut balance_found = false;
+    pub fn get_balance_of_wallet(
+        &self,
+        address: &String,
+        password: &String,
+    ) -> Result<u32, WalletError> {
+        let wallet = match self.get_wallet(address) {
+            Some(wallet) => wallet,
+            None => return Err(WalletError::WalletNotFound),
+        };
 
-        for blockchain_wallet in &self.wallets {
-            if blockchain_wallet.address == address {
-                balance = blockchain_wallet.balance;
-                balance_found = true;
-            }
+        if wallet.password != password.to_string() {
+            return Err(WalletError::WrongPassword);
         }
 
-        match balance_found {
-            true => Ok(balance),
-            false => Err(BlockchainError::AddressNotFound),
-        }
+        Ok(wallet.balance)
     }
 
-    pub fn get_wallet(&self, address: String) -> Option<Wallet>{
+    pub fn get_transactions_of_wallet(
+        &self,
+        address: &String,
+        password: &String,
+    ) -> Result<Vec<TransactionInfo>, WalletError> {
+        let wallet = match self.get_wallet(address) {
+            Some(wallet) => wallet,
+            None => return Err(WalletError::WalletNotFound),
+        };
+
+        if wallet.password != password.to_string() {
+            return Err(WalletError::WrongPassword);
+        }
+
+        Ok(wallet.transactions)
+    }
+
+    pub fn get_wallet(&self, address: &String) -> Option<Wallet> {
         for wallet in self.wallets.clone() {
-            if wallet.address == address {
+            if wallet.address == address.to_string() {
                 return Some(wallet);
             }
         }
-
         None
+    }
+
+    pub fn update_wallet(&mut self, wallet: Wallet) -> Result<(), TransactionError> {
+        match self.wallets.iter().position(|r| *r.address == wallet.address){
+            Some(index) => self.wallets[index] = wallet,
+            None => return Err(TransactionError::InvalidWallet)
+        }
+        
+        Ok(())
     }
 }

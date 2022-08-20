@@ -1,8 +1,8 @@
 use crate::blockchain::{
-    block::Block,
+    block::{BlockInfo, BlockTransaction},
     block_chain::{BlockchainError, BLOCKCHAIN},
-    transaction::{TransactionInfo, TransactionError},
-    wallet::{WalletError, WalletInfo, MineRewardAddress},
+    transaction::{TransactionError, TransactionInfo},
+    wallet::{MineRewardAddress, WalletError, WalletInfo},
 };
 use actix_web::{get, post, web::Json, web::Path};
 use serde::{Deserialize, Serialize};
@@ -11,65 +11,99 @@ use serde::{Deserialize, Serialize};
 pub async fn new_transaction(
     transaction: Json<TransactionInfo>,
 ) -> Result<String, TransactionError> {
-    match BLOCKCHAIN.lock().unwrap().create_transaction(transaction.0) {
-        Ok(response) => Ok(response),
-        Err(err) => Err(err),
-    }
+    Ok(BLOCKCHAIN.lock().unwrap().create_transaction(transaction.0)?)
 }
 
 #[post("/transaction/mine")]
 pub async fn mine_pending_transactions(
     reward_address: Json<MineRewardAddress>,
 ) -> Result<String, BlockchainError> {
-    match BLOCKCHAIN
+    Ok(BLOCKCHAIN
         .lock()
         .unwrap()
-        .mine_pending_transactions(&reward_address.mining_reward_address)
-    {
-        Ok(()) => Ok("Transactions successfully mined".to_string()),
-        Err(err) => Err(err),
-    }
+        .mine_pending_transactions(&reward_address.mining_reward_address)?)
+}
+
+#[post("/wallet/new")]
+pub async fn create_wallet(wallet: Json<WalletInfo>) -> Result<String, WalletError> {
+    Ok(BLOCKCHAIN.lock().unwrap().create_wallet(wallet.0)?)
 }
 
 #[get("/blockchain/get")]
-pub async fn show_blockchain() -> Result<Json<Vec<Block>>, BlockchainError> {
+pub async fn show_blockchain() -> Result<Json<Vec<BlockInfo>>, BlockchainError> {
     let chain = BLOCKCHAIN.lock().unwrap().chain.clone();
+    let mut show_chain = vec![];
 
-    if chain.is_empty() {
+    for block in chain {
+        let mut show_transactions = vec![];
+
+        for transaction in block.transactions {
+            show_transactions.push(BlockTransaction {
+                from: transaction.from_wallet.address,
+                to: transaction.to_wallet.address,
+                amount: transaction.amount,
+            });
+        }
+
+        let block_info = BlockInfo {
+            index: block.index,
+            timestamp: block.timestamp,
+            transactions: show_transactions,
+            hash: block.hash,
+            previous_hash: block.previous_hash,
+        };
+
+        show_chain.push(block_info);
+    }
+
+    if show_chain.is_empty() {
         Err(BlockchainError::ChainIsEmpty)
     } else {
-        Ok(Json(chain))
+        Ok(Json(show_chain))
     }
 }
 
 #[derive(Deserialize, Serialize)]
 pub struct AddressIdentifier {
     address: String,
+    password: String,
 }
 
-#[get("/balance/{address}")]
-pub async fn get_balance_of_address(
+#[get("/wallet/balance/{address}/{password}")]
+pub async fn get_wallet_balance(
     address_identifier: Path<AddressIdentifier>,
-) -> Result<String, BlockchainError> {
-    let address = address_identifier.into_inner().address;
-    let balance = BLOCKCHAIN
+) -> Result<String, WalletError> {
+    let address_iden = address_identifier.into_inner();
+    let address = address_iden.address;
+    let password = address_iden.password;
+
+    match BLOCKCHAIN
         .lock()
         .unwrap()
-        .get_balance_of_wallet(address.to_string());
-
-    match balance {
+        .get_balance_of_wallet(&address, &password)
+    {
         Ok(balance) => Ok(format!("Balance for wallet {} is: {}", address, balance)),
         Err(err) => Err(err),
     }
 }
 
-#[post("/wallet/new")]
-pub async fn create_wallet(wallet: Json<WalletInfo>) -> Result<String, WalletError> {
-    let mut blockchain = BLOCKCHAIN.lock().unwrap();
-    let wallet = blockchain.create_wallet(wallet.0);
+#[get("wallet/transactions/{address}/{password}")]
+pub async fn get_wallet_transactions(
+    address_identifier: Path<AddressIdentifier>,
+) -> Result<String, WalletError> {
+    let address_iden = address_identifier.into_inner();
+    let address = address_iden.address;
+    let password = address_iden.password;
 
-    match wallet {
-        Ok(msg) => Ok(msg),
+    match BLOCKCHAIN
+        .lock()
+        .unwrap()
+        .get_transactions_of_wallet(&address, &password)
+    {
+        Ok(transactions) => Ok(format!(
+            "Transactions for wallet {}:  {:?}",
+            address, transactions
+        )),
         Err(err) => Err(err),
     }
 }
