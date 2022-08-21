@@ -1,6 +1,3 @@
-use std::sync::Mutex;
-use std::vec;
-
 use super::transaction::{TransactionError, TransactionInfo};
 use super::wallet::{Wallet, WalletError, WalletInfo};
 use crate::blockchain::block::Block;
@@ -11,10 +8,14 @@ use actix_web::{HttpResponse, ResponseError};
 use derive_more::Display;
 use lazy_static::lazy_static;
 use serde::{Deserialize, Serialize};
+use std::sync::Mutex;
+use std::vec;
 
 lazy_static! {
     pub static ref BLOCKCHAIN: Mutex<BlockChain> = Mutex::new(BlockChain::default());
 }
+
+pub const MINING_ADDRESS: &str = "MINING";
 
 #[derive(Deserialize, Serialize, Clone, Debug)]
 pub struct BlockChain {
@@ -41,9 +42,7 @@ impl Default for BlockChain {
 
 #[derive(Debug, Display)]
 pub enum BlockchainError {
-    NoPendingTransactions,
     ChainIsEmpty,
-    InvalidRewardAddress,
 }
 
 impl ResponseError for BlockchainError {
@@ -55,9 +54,7 @@ impl ResponseError for BlockchainError {
 
     fn status_code(&self) -> StatusCode {
         match self {
-            BlockchainError::NoPendingTransactions => StatusCode::NOT_FOUND,
             BlockchainError::ChainIsEmpty => StatusCode::NOT_FOUND,
-            BlockchainError::InvalidRewardAddress => StatusCode::NOT_FOUND,
         }
     }
 }
@@ -66,14 +63,39 @@ impl BlockChain {
     pub fn mine_pending_transactions(
         &mut self,
         mining_reward_address: &String,
-    ) -> Result<String, BlockchainError> {
+    ) -> Result<String, TransactionError> {
         if self.pending_transactions.is_empty() {
-            return Err(BlockchainError::NoPendingTransactions);
+            return Err(TransactionError::NoPendingTransactions);
+        }
+
+        for transaction in self.pending_transactions.clone() {
+            let mut to_wallet = transaction.to_wallet;
+            let mut from_wallet = transaction.from_wallet;
+
+            to_wallet.balance += transaction.amount;
+            to_wallet.transactions.push(TransactionInfo {
+                from_address: from_wallet.address.clone(),
+                from_password: from_wallet.password.clone(),
+                to_address: to_wallet.address.clone(),
+                amount: transaction.amount,
+            });
+            self.update_wallet(to_wallet.clone())?;
+
+            if from_wallet.address != MINING_ADDRESS.to_string() {
+                from_wallet.balance -= transaction.amount;
+                from_wallet.transactions.push(TransactionInfo {
+                    from_address: from_wallet.address.clone(),
+                    from_password: from_wallet.password.clone(),
+                    to_address: to_wallet.address.clone(),
+                    amount: transaction.amount,
+                });
+                self.update_wallet(from_wallet.clone())?;
+            }
         }
 
         let mining_reward_wallet = match self.get_wallet(mining_reward_address) {
             Some(wallet) => wallet,
-            None => return Err(BlockchainError::InvalidRewardAddress),
+            None => return Err(TransactionError::InvalidRewardAddress),
         };
 
         let mut block = Block::new(self.chain.len(), &self.pending_transactions);
@@ -89,7 +111,7 @@ impl BlockChain {
 
         self.chain.push(block);
         self.pending_transactions = vec![Transaction::new(
-            Wallet::new("".to_string(), 0, "".to_string()),
+            Wallet::new(MINING_ADDRESS.to_string(), 0, "".to_string()),
             mining_reward_wallet,
             self.mining_reward,
         )];
@@ -106,7 +128,7 @@ impl BlockChain {
             Err(err) => return Err(err),
         }
 
-        let mut from_wallet = match self.get_wallet(&transaction.from_address) {
+        let from_wallet = match self.get_wallet(&transaction.from_address) {
             Some(wallet) => wallet,
             None => return Err(TransactionError::InvalidFromAddress),
         };
@@ -115,7 +137,7 @@ impl BlockChain {
             return Err(TransactionError::WrongFromPassword);
         }
 
-        let mut to_wallet = match self.get_wallet(&transaction.to_address) {
+        let to_wallet = match self.get_wallet(&transaction.to_address) {
             Some(wallet) => wallet,
             None => return Err(TransactionError::InvalidToAddress),
         };
@@ -123,15 +145,6 @@ impl BlockChain {
         if from_wallet.balance < transaction.amount {
             return Err(TransactionError::NotEnoughMoney);
         };
-
-        from_wallet.balance -=transaction.amount;
-        to_wallet.balance +=transaction.amount;
-
-        from_wallet.transactions.push(transaction.clone());
-        to_wallet.transactions.push(transaction.clone());
-
-        self.update_wallet(from_wallet.clone())?;
-        self.update_wallet(to_wallet.clone())?;
 
         let new_transaction = Transaction::new(from_wallet, to_wallet, transaction.amount);
         self.pending_transactions.push(new_transaction);
@@ -200,11 +213,15 @@ impl BlockChain {
     }
 
     pub fn update_wallet(&mut self, wallet: Wallet) -> Result<(), TransactionError> {
-        match self.wallets.iter().position(|r| *r.address == wallet.address){
+        match self
+            .wallets
+            .iter()
+            .position(|w| *w.address == wallet.address)
+        {
             Some(index) => self.wallets[index] = wallet,
-            None => return Err(TransactionError::InvalidWallet)
+            None => return Err(TransactionError::InvalidWallet),
         }
-        
+
         Ok(())
     }
 }

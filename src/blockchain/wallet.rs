@@ -4,7 +4,7 @@ use actix_web::{
 };
 use derive_more::Display;
 use serde::{Deserialize, Serialize};
-use super::transaction::{TransactionInfo};
+use super::{transaction::{TransactionInfo}, block_chain::MINING_ADDRESS};
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct Wallet {
@@ -43,6 +43,10 @@ impl WalletInfo {
             return Err(WalletError::EmptyAddress);
         }
 
+        if self.address == MINING_ADDRESS.to_string() {
+            return Err(WalletError::AddressNotValid);
+        }
+
         if self.balance < 0 {
             return Err(WalletError::NegativeBallance);
         }
@@ -63,6 +67,7 @@ pub enum WalletError {
     WalletAlreadyExists,
     WalletNotFound,
     WrongPassword,
+    AddressNotValid
 }
 
 impl ResponseError for WalletError {
@@ -80,6 +85,7 @@ impl ResponseError for WalletError {
             WalletError::WalletAlreadyExists => StatusCode::FAILED_DEPENDENCY,
             WalletError::WalletNotFound => StatusCode::NOT_FOUND,
             WalletError::WrongPassword => StatusCode::FAILED_DEPENDENCY,
+            WalletError::AddressNotValid => StatusCode::FAILED_DEPENDENCY,
         }
     }
 }

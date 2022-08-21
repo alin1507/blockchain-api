@@ -13,7 +13,7 @@ pub struct Block {
     pub previous_hash: String,
     pub nonce: usize,
 }
-#[derive( Deserialize, Serialize)]
+#[derive(Deserialize, Serialize, Debug)]
 pub struct BlockInfo {
     pub index: usize,
     pub timestamp: u64,
@@ -22,7 +22,7 @@ pub struct BlockInfo {
     pub previous_hash: String,
 }
 
-#[derive( Deserialize, Serialize, Debug)]
+#[derive(Deserialize, Serialize, Debug)]
 pub struct BlockTransaction {
     pub from: String,
     pub to: String,
@@ -93,8 +93,6 @@ impl Block {
             self.nonce += 1;
             self.set_hash();
         }
-
-        println!("Block mined: {}", self.hash);
     }
 }
 

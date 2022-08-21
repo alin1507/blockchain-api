@@ -11,13 +11,16 @@ use serde::{Deserialize, Serialize};
 pub async fn new_transaction(
     transaction: Json<TransactionInfo>,
 ) -> Result<String, TransactionError> {
-    Ok(BLOCKCHAIN.lock().unwrap().create_transaction(transaction.0)?)
+    Ok(BLOCKCHAIN
+        .lock()
+        .unwrap()
+        .create_transaction(transaction.0)?)
 }
 
 #[post("/transaction/mine")]
 pub async fn mine_pending_transactions(
     reward_address: Json<MineRewardAddress>,
-) -> Result<String, BlockchainError> {
+) -> Result<String, TransactionError> {
     Ok(BLOCKCHAIN
         .lock()
         .unwrap()
@@ -74,8 +77,7 @@ pub async fn get_wallet_balance(
     address_identifier: Path<AddressIdentifier>,
 ) -> Result<String, WalletError> {
     let address_iden = address_identifier.into_inner();
-    let address = address_iden.address;
-    let password = address_iden.password;
+    let (address, password) = (address_iden.address, address_iden.password);
 
     match BLOCKCHAIN
         .lock()
@@ -90,20 +92,23 @@ pub async fn get_wallet_balance(
 #[get("wallet/transactions/{address}/{password}")]
 pub async fn get_wallet_transactions(
     address_identifier: Path<AddressIdentifier>,
-) -> Result<String, WalletError> {
+) -> Result<Json<Vec<BlockTransaction>>, WalletError> {
     let address_iden = address_identifier.into_inner();
-    let address = address_iden.address;
-    let password = address_iden.password;
+    let (address, password) = (address_iden.address, address_iden.password);
 
-    match BLOCKCHAIN
+    let transactions = BLOCKCHAIN
         .lock()
         .unwrap()
-        .get_transactions_of_wallet(&address, &password)
-    {
-        Ok(transactions) => Ok(format!(
-            "Transactions for wallet {}:  {:?}",
-            address, transactions
-        )),
-        Err(err) => Err(err),
-    }
+        .get_transactions_of_wallet(&address, &password)?;
+
+    let block_transactions: Vec<BlockTransaction> = transactions
+        .iter()
+        .map(|transaction_info| BlockTransaction {
+            from: transaction_info.from_address.to_string(),
+            to: transaction_info.to_address.to_string(),
+            amount: transaction_info.amount,
+        })
+        .collect();
+
+    Ok(Json(block_transactions))
 }

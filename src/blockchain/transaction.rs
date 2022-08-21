@@ -82,7 +82,9 @@ pub enum TransactionError {
     InvalidFromAddress,
     InvalidToAddress,
     WrongFromPassword,
-    InvalidWallet
+    InvalidWallet,
+    NoPendingTransactions,
+    InvalidRewardAddress
 }
 
 impl ResponseError for TransactionError {
@@ -102,6 +104,8 @@ impl ResponseError for TransactionError {
             TransactionError::NotEnoughMoney => StatusCode::FAILED_DEPENDENCY,
             TransactionError::WrongFromPassword => StatusCode::FAILED_DEPENDENCY,
             TransactionError::InvalidWallet => StatusCode::FAILED_DEPENDENCY,
+            TransactionError::NoPendingTransactions => StatusCode::NOT_FOUND,
+            TransactionError::InvalidRewardAddress => StatusCode::NOT_FOUND,
         }
     }
 }
