@@ -8,7 +8,7 @@ use actix_web::{get, post, web::Json, web::Path};
 use serde::{Deserialize, Serialize};
 
 #[post("/transaction/new")]
-pub async fn new_transaction(
+pub async fn create_transaction(
     transaction: Json<TransactionInfo>,
 ) -> Result<String, TransactionError> {
     Ok(BLOCKCHAIN

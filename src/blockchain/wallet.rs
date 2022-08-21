@@ -38,6 +38,9 @@ impl Wallet {
 }
 
 impl WalletInfo {
+    /**
+     * Check if the wallet is valid
+     */
     pub fn check_wallet_info(&self) -> Result<(), WalletError> {
         if self.address.is_empty() {
             return Err(WalletError::EmptyAddress);

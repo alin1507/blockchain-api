@@ -60,6 +60,11 @@ impl ResponseError for BlockchainError {
 }
 
 impl BlockChain {
+    /**
+     * Mine transactions that are pending
+     * Reward the user that mined the block with the mining reward for this blockchain
+     * Add a new transaction on pending transactions
+     */
     pub fn mine_pending_transactions(
         &mut self,
         mining_reward_address: &String,
@@ -119,6 +124,9 @@ impl BlockChain {
         Ok("Transactions successfully mined".to_string())
     }
 
+    /**
+     * Create a new transaction and add it to pending transactions
+     */
     pub fn create_transaction(
         &mut self,
         transaction: TransactionInfo,
@@ -152,6 +160,9 @@ impl BlockChain {
         Ok("Transaction successfully made".to_string())
     }
 
+    /**
+     * Create a new wallet
+     */
     pub fn create_wallet(&mut self, wallet: WalletInfo) -> Result<String, WalletError> {
         match wallet.check_wallet_info() {
             Ok(_) => (),
@@ -169,6 +180,9 @@ impl BlockChain {
         Ok("Wallet created!".to_string())
     }
 
+    /**
+     * Return wallet ballance based on the address and password
+     */
     pub fn get_balance_of_wallet(
         &self,
         address: &String,
@@ -186,6 +200,9 @@ impl BlockChain {
         Ok(wallet.balance)
     }
 
+    /**
+     * Return wallet transactions based on address and password
+     */
     pub fn get_transactions_of_wallet(
         &self,
         address: &String,
@@ -203,6 +220,9 @@ impl BlockChain {
         Ok(wallet.transactions)
     }
 
+    /**
+     * Return wallet based on address
+     */
     pub fn get_wallet(&self, address: &String) -> Option<Wallet> {
         for wallet in self.wallets.clone() {
             if wallet.address == address.to_string() {
@@ -212,6 +232,9 @@ impl BlockChain {
         None
     }
 
+    /**
+     * Update wallet from the blockchain
+     */
     pub fn update_wallet(&mut self, wallet: Wallet) -> Result<(), TransactionError> {
         match self
             .wallets

@@ -1,6 +1,6 @@
 use crypto_hash::{hex_digest, Algorithm};
 use serde::{Deserialize, Serialize};
-use std::{fmt, time::SystemTime};
+use std::{time::SystemTime};
 
 use crate::blockchain::transaction::Transaction;
 
@@ -47,30 +47,35 @@ impl Block {
         new_block
     }
 
+    /**
+     * Set value for previous hash
+     */
     pub fn set_previous_hash(&mut self, previous_hash: &str) {
         self.previous_hash = previous_hash.to_string();
     }
 
+    /**
+     * Set value for hash
+     */
     pub fn set_hash(&mut self) {
         self.hash = self.calculate_hash();
     }
 
+    /**
+     * Calculate hash with SHA256 based on the block info
+     */
     pub fn calculate_hash(&self) -> String {
         let mut transactions_string: Vec<String> = vec![];
 
         for transaction in &self.transactions {
-            let from_address_string = format!(
+            transactions_string.push(format!(
                 "{}{}",
                 transaction.from_wallet.address, transaction.from_wallet.address
-            );
-
-            let to_address_string = format!(
+            ));
+            transactions_string.push(format!(
                 "{}{}",
                 transaction.to_wallet.address, transaction.to_wallet.address
-            );
-
-            transactions_string.push(from_address_string);
-            transactions_string.push(to_address_string);
+            ));
             transactions_string.push(transaction.amount.to_string());
         }
 
@@ -88,20 +93,13 @@ impl Block {
         hex_digest(Algorithm::SHA256, hash_bytes)
     }
 
+    /**
+     * Mine block based on blockchain difficulty
+     */
     pub fn mine_block(&mut self, difficulty: usize) {
         while &self.hash[0..difficulty] != vec!["0"; difficulty].join("") {
             self.nonce += 1;
             self.set_hash();
         }
-    }
-}
-
-impl fmt::Display for Block {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(
-            f,
-            "{}, {:?}, {:#?}, {}, {}",
-            self.index, self.timestamp, self.transactions, self.hash, self.previous_hash
-        )
     }
 }

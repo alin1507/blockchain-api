@@ -4,8 +4,6 @@ use actix_web::{
 };
 use derive_more::Display;
 use serde::{Deserialize, Serialize};
-use std::fmt;
-
 use super::wallet::Wallet;
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
@@ -34,6 +32,9 @@ impl Transaction {
 }
 
 impl TransactionInfo {
+    /**
+     * Check if the transaction is valid
+     */
     pub fn check_transaction_info(&self) -> Result<(), TransactionError> {
         if self.from_address.is_empty() {
             return Err(TransactionError::EmptyFromAddress);
@@ -50,28 +51,6 @@ impl TransactionInfo {
         Ok(())
     }
 }
-
-impl fmt::Display for Transaction {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(
-            f,
-            "{}, {}, {}",
-            self.amount, self.from_wallet.address, self.to_wallet.address
-        )
-    }
-}
-
-impl fmt::Display for TransactionInfo {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(
-            f,
-            "{}, {}, {}",
-            self.from_address, self.to_address, self.amount
-        )
-    }
-}
-
-
 
 #[derive(Debug, Display)]
 pub enum TransactionError {
