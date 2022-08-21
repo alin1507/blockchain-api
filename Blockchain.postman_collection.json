@@ -1,0 +1,178 @@
+{
+	"info": {
+		"_postman_id": "7ee5f3bc-c5cc-4ee7-a1b3-c3b180371ba0",
+		"name": "Blockchain",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Create wallet",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"address\":\"\",\r\n    \"balance\": 0,\r\n    \"password\":\"\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://127.0.0.1:8080/wallet/new",
+					"protocol": "http",
+					"host": [
+						"127",
+						"0",
+						"0",
+						"1"
+					],
+					"port": "8080",
+					"path": [
+						"wallet",
+						"new"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "New transaction",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"from_address\":\"\",\r\n    \"from_password\":\"\",\r\n    \"to_address\":\"\",\r\n    \"amount\":0\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://127.0.0.1:8080/transaction/new",
+					"protocol": "http",
+					"host": [
+						"127",
+						"0",
+						"0",
+						"1"
+					],
+					"port": "8080",
+					"path": [
+						"transaction",
+						"new"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Mine pending transactions",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"mining_reward_address\":\"\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://127.0.0.1:8080/transaction/mine",
+					"protocol": "http",
+					"host": [
+						"127",
+						"0",
+						"0",
+						"1"
+					],
+					"port": "8080",
+					"path": [
+						"transaction",
+						"mine"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Show blockchain",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://127.0.0.1:8080/blockchain/get",
+					"protocol": "http",
+					"host": [
+						"127",
+						"0",
+						"0",
+						"1"
+					],
+					"port": "8080",
+					"path": [
+						"blockchain",
+						"get"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get balance for wallet",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://127.0.0.1:8080/wallet/balance/to_adresa/password",
+					"protocol": "http",
+					"host": [
+						"127",
+						"0",
+						"0",
+						"1"
+					],
+					"port": "8080",
+					"path": [
+						"wallet",
+						"balance",
+						"to_adresa",
+						"password"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get transactions for wallet",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://127.0.0.1:8080/wallet/transactions/from_adresa/password",
+					"protocol": "http",
+					"host": [
+						"127",
+						"0",
+						"0",
+						"1"
+					],
+					"port": "8080",
+					"path": [
+						"wallet",
+						"transactions",
+						"from_adresa",
+						"password"
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}
