@@ -75,7 +75,7 @@ impl BlockChain {
 
         for transaction in self.pending_transactions.clone() {
             let mut to_wallet = transaction.to_wallet;
-            let mut from_wallet = transaction.from_wallet;
+            let from_wallet = transaction.from_wallet;
 
             to_wallet.balance += transaction.amount;
             to_wallet.transactions.push(TransactionInfo {
@@ -85,17 +85,6 @@ impl BlockChain {
                 amount: transaction.amount,
             });
             self.update_wallet(to_wallet.clone())?;
-
-            if from_wallet.address != MINING_ADDRESS.to_string() {
-                from_wallet.balance -= transaction.amount;
-                from_wallet.transactions.push(TransactionInfo {
-                    from_address: from_wallet.address.clone(),
-                    from_password: from_wallet.password.clone(),
-                    to_address: to_wallet.address.clone(),
-                    amount: transaction.amount,
-                });
-                self.update_wallet(from_wallet.clone())?;
-            }
         }
 
         let mining_reward_wallet = match self.get_wallet(mining_reward_address) {
@@ -136,7 +125,7 @@ impl BlockChain {
             Err(err) => return Err(err),
         }
 
-        let from_wallet = match self.get_wallet(&transaction.from_address) {
+        let mut from_wallet = match self.get_wallet(&transaction.from_address) {
             Some(wallet) => wallet,
             None => return Err(TransactionError::InvalidFromAddress),
         };
@@ -153,6 +142,21 @@ impl BlockChain {
         if from_wallet.balance < transaction.amount {
             return Err(TransactionError::NotEnoughMoney);
         };
+
+        if transaction.amount < 0 {
+            return Err(TransactionError::NegativeAmount);
+        };
+
+        if from_wallet.address != MINING_ADDRESS.to_string() {
+            from_wallet.balance -= transaction.amount;
+            from_wallet.transactions.push(TransactionInfo {
+                from_address: from_wallet.address.clone(),
+                from_password: from_wallet.password.clone(),
+                to_address: to_wallet.address.clone(),
+                amount: transaction.amount,
+            });
+            self.update_wallet(from_wallet.clone())?;
+        }
 
         let new_transaction = Transaction::new(from_wallet, to_wallet, transaction.amount);
         self.pending_transactions.push(new_transaction);
