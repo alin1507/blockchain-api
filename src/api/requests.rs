@@ -1,8 +1,8 @@
 use crate::blockchain::{
     block::{BlockInfo, BlockTransaction},
-    block_chain::{BlockchainError, BLOCKCHAIN},
-    transaction::{TransactionError, TransactionInfo},
-    wallet::{MineRewardAddress, WalletError, WalletInfo},
+    block_chain::{BLOCKCHAIN},
+    transaction::{TransactionInfo},
+    wallet::{MineRewardAddress, WalletInfo, WalletCoins}, block_chain_errors::BlockChainError,
 };
 use actix_web::{get, post, web::Json, web::Path};
 use serde::{Deserialize, Serialize};
@@ -10,7 +10,7 @@ use serde::{Deserialize, Serialize};
 #[post("/transaction/new")]
 pub async fn create_transaction(
     transaction: Json<TransactionInfo>,
-) -> Result<String, TransactionError> {
+) -> Result<String, BlockChainError> {
     Ok(BLOCKCHAIN
         .lock()
         .unwrap()
@@ -20,7 +20,7 @@ pub async fn create_transaction(
 #[post("/transaction/mine")]
 pub async fn mine_pending_transactions(
     reward_address: Json<MineRewardAddress>,
-) -> Result<String, TransactionError> {
+) -> Result<String, BlockChainError> {
     Ok(BLOCKCHAIN
         .lock()
         .unwrap()
@@ -28,12 +28,17 @@ pub async fn mine_pending_transactions(
 }
 
 #[post("/wallet/new")]
-pub async fn create_wallet(wallet: Json<WalletInfo>) -> Result<String, WalletError> {
+pub async fn create_wallet(wallet: Json<WalletInfo>) -> Result<String, BlockChainError> {
     Ok(BLOCKCHAIN.lock().unwrap().create_wallet(wallet.0)?)
 }
 
+#[post("/wallet/addCoins")]
+pub async fn add_coins(wallet: Json<WalletCoins>) -> Result<String, BlockChainError> {
+    Ok(BLOCKCHAIN.lock().unwrap().add_coins(wallet.0)?)
+}
+
 #[get("/blockchain/get")]
-pub async fn show_blockchain() -> Result<Json<Vec<BlockInfo>>, BlockchainError> {
+pub async fn show_blockchain() -> Result<Json<Vec<BlockInfo>>, BlockChainError> {
     let chain = BLOCKCHAIN.lock().unwrap().chain.clone();
     let mut show_chain = vec![];
 
@@ -60,7 +65,7 @@ pub async fn show_blockchain() -> Result<Json<Vec<BlockInfo>>, BlockchainError> 
     }
 
     if show_chain.is_empty() {
-        Err(BlockchainError::ChainIsEmpty)
+        Err(BlockChainError::ChainIsEmpty)
     } else {
         Ok(Json(show_chain))
     }
@@ -75,7 +80,7 @@ pub struct AddressIdentifier {
 #[get("/wallet/balance/{address}/{password}")]
 pub async fn get_wallet_balance(
     address_identifier: Path<AddressIdentifier>,
-) -> Result<String, WalletError> {
+) -> Result<String, BlockChainError> {
     let address_iden = address_identifier.into_inner();
     let (address, password) = (address_iden.address, address_iden.password);
 
@@ -92,7 +97,7 @@ pub async fn get_wallet_balance(
 #[get("wallet/transactions/{address}/{password}")]
 pub async fn get_wallet_transactions(
     address_identifier: Path<AddressIdentifier>,
-) -> Result<Json<Vec<BlockTransaction>>, WalletError> {
+) -> Result<Json<Vec<BlockTransaction>>, BlockChainError> {
     let address_iden = address_identifier.into_inner();
     let (address, password) = (address_iden.address, address_iden.password);
 

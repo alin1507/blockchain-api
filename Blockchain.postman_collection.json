@@ -102,6 +102,38 @@
 			"response": []
 		},
 		{
+			"name": "Add coins",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"address\":\"\",\r\n    \"password\":\"\",\r\n    \"coins\": 0\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://127.0.0.1:8080/wallet/addCoins",
+					"protocol": "http",
+					"host": [
+						"127",
+						"0",
+						"0",
+						"1"
+					],
+					"port": "8080",
+					"path": [
+						"wallet",
+						"addCoins"
+					]
+				}
+			},
+			"response": []
+		},
+		{
 			"name": "Show blockchain",
 			"request": {
 				"method": "GET",

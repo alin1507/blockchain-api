@@ -1,10 +1,5 @@
-use actix_web::{
-    http::{header::ContentType, StatusCode},
-    HttpResponse, ResponseError,
-};
-use derive_more::Display;
 use serde::{Deserialize, Serialize};
-use super::wallet::Wallet;
+use super::{wallet::Wallet, block_chain_errors::BlockChainError};
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct Transaction {
@@ -35,58 +30,19 @@ impl TransactionInfo {
     /**
      * Check if the transaction is valid
      */
-    pub fn check_transaction_info(&self) -> Result<(), TransactionError> {
+    pub fn check_transaction_info(&self) -> Result<(), BlockChainError> {
         if self.from_address.is_empty() {
-            return Err(TransactionError::EmptyFromAddress);
+            return Err(BlockChainError::EmptyFromAddress);
         }
 
         if self.to_address.is_empty() {
-            return Err(TransactionError::EmptyToAddress);
+            return Err(BlockChainError::EmptyToAddress);
         }
 
         if self.amount <= 0 {
-            return Err(TransactionError::InvalidAmount);
+            return Err(BlockChainError::InvalidAmount);
         }
 
         Ok(())
-    }
-}
-
-#[derive(Debug, Display)]
-pub enum TransactionError {
-    EmptyToAddress,
-    EmptyFromAddress,
-    InvalidAmount,
-    NotEnoughMoney,
-    InvalidFromAddress,
-    InvalidToAddress,
-    WrongFromPassword,
-    InvalidWallet,
-    NoPendingTransactions,
-    InvalidRewardAddress,
-    NegativeAmount
-}
-
-impl ResponseError for TransactionError {
-    fn error_response(&self) -> HttpResponse {
-        HttpResponse::build(self.status_code())
-            .insert_header(ContentType::json())
-            .body(self.to_string())
-    }
-
-    fn status_code(&self) -> StatusCode {
-        match self {
-            TransactionError::InvalidFromAddress => StatusCode::FAILED_DEPENDENCY,
-            TransactionError::InvalidToAddress => StatusCode::FAILED_DEPENDENCY,
-            TransactionError::EmptyToAddress => StatusCode::NOT_FOUND,
-            TransactionError::EmptyFromAddress => StatusCode::NOT_FOUND,
-            TransactionError::InvalidAmount => StatusCode::FAILED_DEPENDENCY,
-            TransactionError::NotEnoughMoney => StatusCode::FAILED_DEPENDENCY,
-            TransactionError::WrongFromPassword => StatusCode::FAILED_DEPENDENCY,
-            TransactionError::InvalidWallet => StatusCode::FAILED_DEPENDENCY,
-            TransactionError::NoPendingTransactions => StatusCode::NOT_FOUND,
-            TransactionError::InvalidRewardAddress => StatusCode::NOT_FOUND,
-            TransactionError::NegativeAmount => StatusCode::FAILED_DEPENDENCY,
-        }
     }
 }
