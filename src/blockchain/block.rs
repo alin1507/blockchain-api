@@ -4,7 +4,7 @@ use std::{time::SystemTime};
 
 use crate::blockchain::transaction::Transaction;
 
-#[derive(Debug, Deserialize, Serialize, Clone)]
+#[derive(Clone)]
 pub struct Block {
     pub index: usize,
     pub timestamp: u64,

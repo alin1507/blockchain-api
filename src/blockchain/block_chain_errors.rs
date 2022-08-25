@@ -1,9 +1,9 @@
 use actix_web::http::header::ContentType;
 use actix_web::http::StatusCode;
 use actix_web::{HttpResponse, ResponseError};
-use derive_more::{Display, Error};
+use derive_more::Display;
 
-#[derive(Debug, Display, Error)]
+#[derive(Debug, Display)]
 pub enum BlockChainError {
     #[display(fmt = "'From' address is empty!")]
     EmptyFromAddress,
@@ -39,7 +39,6 @@ pub enum BlockChainError {
     WalletNotFound,
     #[display(fmt = "Chain is empty!")]
     ChainIsEmpty,
-    
 }
 impl ResponseError for BlockChainError {
     fn error_response(&self) -> HttpResponse {
