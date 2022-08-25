@@ -123,6 +123,7 @@ impl BlockChain {
         };
 
         //CHECK IF THE AMOUNT IS LESS THAN 0
+        #[allow(unused_comparisons)]
         if transaction.amount < 0 {
             return Err(BlockChainError::NegativeAmount);
         };
@@ -242,6 +243,7 @@ impl BlockChain {
         }
 
         //CHECK THE AMOUNT TO BE ADDED
+        #[allow(unused_comparisons)]
         if add_coins.coins < 0 {
             return Err(BlockChainError::NegativeAmount);
         }

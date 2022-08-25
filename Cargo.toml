@@ -1,7 +1,15 @@
 [package]
-name = "blockchain-api"
+name = "blockchainApi"
 version = "0.1.0"
 edition = "2021"
+
+[[bin]]
+name = "blockchainApi"
+path = "src/main.rs"
+
+[lib]
+name = "blockchainApi"
+path = "src/lib.rs"
 
 [dependencies]
 crypto-hash = "0.3.4"
