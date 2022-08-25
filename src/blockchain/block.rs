@@ -4,6 +4,7 @@ use std::{time::SystemTime};
 
 use crate::blockchain::transaction::Transaction;
 
+//CONTAINS INFORMATION ABOUT A BLOCK FROM THE BLOCKCHAIN
 #[derive(Clone)]
 pub struct Block {
     pub index: usize,
@@ -14,6 +15,7 @@ pub struct Block {
     pub nonce: usize,
 }
 
+//CONTAINS INFORMATION THAT CAN BE SEEN BY THE USER IN THE BLOCKCHAIN
 #[derive(Deserialize, Serialize, Debug)]
 pub struct BlockTransaction {
     pub from: String,
@@ -22,6 +24,7 @@ pub struct BlockTransaction {
 }
 
 impl Block {
+    //CREATE A NEW BLOCK
     pub fn new(index: usize, transactions: &Vec<Transaction>) -> Self {
         let mut new_block = Block {
             index,
@@ -39,26 +42,21 @@ impl Block {
         new_block
     }
 
-    /**
-     * Set value for previous hash
-     */
+    //SET BLOCK PREVIOUS HASH
     pub fn set_previous_hash(&mut self, previous_hash: &str) {
         self.previous_hash = previous_hash.to_string();
     }
 
-    /**
-     * Set value for hash
-     */
+    //SET HASH VALUE
     pub fn set_hash(&mut self) {
         self.hash = self.calculate_hash();
     }
 
-    /**
-     * Calculate hash with SHA256 based on the block info
-     */
+    //CALCULATE HASH WITH SHA256 BASED OT THE BLOCK INFO
     pub fn calculate_hash(&self) -> String {
         let mut transactions_string: Vec<String> = vec![];
 
+        //ADD TRANSACTION INFO INTO A VEC AS STRINGS
         for transaction in &self.transactions {
             transactions_string.push(format!(
                 "{}{}",
@@ -71,6 +69,7 @@ impl Block {
             transactions_string.push(transaction.amount.to_string());
         }
 
+        //ADD ALL INFOS ABOUT THE TRANSACTION INTO A STRING
         let hash_string = format!(
             "{}{}{}{}{}",
             self.index,
@@ -80,14 +79,12 @@ impl Block {
             self.nonce.to_string()
         );
 
+        //CREATE AND RETURN THE HASH
         let hash_bytes = hash_string.as_bytes();
-
         hex_digest(Algorithm::SHA256, hash_bytes)
     }
 
-    /**
-     * Mine block based on blockchain difficulty
-     */
+    //MINE BLOCK BASED ON THE BLOCKCHAIN DIFFICULTY
     pub fn mine_block(&mut self, difficulty: usize) {
         while &self.hash[0..difficulty] != vec!["0"; difficulty].join("") {
             self.nonce += 1;

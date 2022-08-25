@@ -1,6 +1,7 @@
 use super::{block_chain_errors::BlockChainError, wallet::Wallet};
 use serde::{Deserialize, Serialize};
 
+//CONTAINS INFORMATION ABOUT A TRANSACTION
 #[derive(Clone)]
 pub struct Transaction {
     pub from_wallet: Wallet,
@@ -8,6 +9,7 @@ pub struct Transaction {
     pub amount: u32,
 }
 
+//CONTAINS THE INFORMATION THAT ARE REQUIRED WHEN CREATING A NEW TRANSACTION
 #[derive(Deserialize, Serialize, Clone, Debug)]
 pub struct TransactionInfo {
     pub from_address: String,
@@ -17,6 +19,7 @@ pub struct TransactionInfo {
 }
 
 impl Transaction {
+    //CREATE A NEW TRANSACTION
     pub fn new(from_wallet: Wallet, to_wallet: Wallet, amount: u32) -> Self {
         Transaction {
             amount,
@@ -27,9 +30,7 @@ impl Transaction {
 }
 
 impl TransactionInfo {
-    /**
-     * Check if the transaction is valid
-     */
+    //CHECK IF THE TRANSACTION IS VALID
     pub fn check_transaction_info(&self) -> Result<(), BlockChainError> {
         if self.from_address.is_empty() {
             return Err(BlockChainError::EmptyFromAddress);

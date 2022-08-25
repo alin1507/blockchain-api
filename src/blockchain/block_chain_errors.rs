@@ -3,6 +3,7 @@ use actix_web::http::StatusCode;
 use actix_web::{HttpResponse, ResponseError};
 use derive_more::Display;
 
+//POSSIBLE ERRORS
 #[derive(Debug, Display)]
 pub enum BlockChainError {
     #[display(fmt = "'From' address is empty!")]
@@ -40,13 +41,16 @@ pub enum BlockChainError {
     #[display(fmt = "Chain is empty!")]
     ChainIsEmpty,
 }
+
 impl ResponseError for BlockChainError {
+    //DISPLAY THE ERROR MESSAGE IN AN 'HttpResponse'
     fn error_response(&self) -> HttpResponse {
         HttpResponse::build(self.status_code())
             .insert_header(ContentType::html())
             .body(self.to_string())
     }
 
+    //MATCH EVERY ERROR THAT MIGHT APPEAR WITH AND STATUS CODE
     fn status_code(&self) -> StatusCode {
         match *self {
             BlockChainError::EmptyFromAddress => StatusCode::NOT_FOUND,

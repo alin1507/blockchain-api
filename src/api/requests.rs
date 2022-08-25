@@ -7,6 +7,7 @@ use crate::blockchain::{
 use actix_web::{get, post, web::Json, web::Path};
 use serde::{Deserialize, Serialize};
 
+//CREATE NEW TRANSACTION WITH 'FROM' ADDRESS, 'FROM' PASSWORD, 'TO' ADDRESS AND THE AMOUNT. ALL THE TRANSACTIONS THAT ARE CREATED ARE GOING TO PENDING TRANSACTIONS
 #[post("/transaction/new")]
 pub async fn create_transaction(
     transaction: Json<TransactionInfo>,
@@ -17,6 +18,7 @@ pub async fn create_transaction(
         .create_transaction(transaction.0)?)
 }
 
+//ALL THE TRANSACTIONS FROM PENDING TRANSACTIONS ARE MOVED INTO THE BLOCK CHAIN AND THE MINER IS REWARDED WITH AN AMOUNT OF COINS
 #[post("/transaction/mine")]
 pub async fn mine_pending_transactions(
     reward_address: Json<MineRewardAddress>,
@@ -27,17 +29,19 @@ pub async fn mine_pending_transactions(
         .mine_pending_transactions(&reward_address.mining_reward_address)?)
 }
 
+//CREATE A NEW WALLET WITH AN ADDRESS, A PASSWORD AND AN AMOUNT OF COINS
 #[post("/wallet/new")]
 pub async fn create_wallet(wallet: Json<WalletInfo>) -> Result<String, BlockChainError> {
     Ok(BLOCKCHAIN.lock().unwrap().create_wallet(wallet.0)?)
 }
 
+//ADD COINS TO AN EXISTING WALLET, THE ADDRESS AND THE PASSWORD ARE NEEDED
 #[post("/wallet/addCoins")]
 pub async fn add_coins(wallet: Json<WalletCoins>) -> Result<String, BlockChainError> {
     Ok(BLOCKCHAIN.lock().unwrap().add_coins(wallet.0)?)
 }
 
-
+//HOLDS THE INFORMATION THAT A USER IS ALLOWED TO SEE IN A BLOCKCHAIN 
 #[derive(Deserialize, Serialize, Debug)]
 pub struct BlockInfo {
     pub index: usize,
@@ -47,6 +51,7 @@ pub struct BlockInfo {
     pub previous_hash: String,
 }
 
+//PARSE THE DATA TO MATCH THE 'BlockInfo' STRUCT AND SHOW THE BLOCKCHAIN
 #[get("/blockchain/get")]
 pub async fn show_blockchain() -> Result<Json<Vec<BlockInfo>>, BlockChainError> {
     let chain = BLOCKCHAIN.lock().unwrap().chain.clone();
@@ -81,12 +86,14 @@ pub async fn show_blockchain() -> Result<Json<Vec<BlockInfo>>, BlockChainError> 
     }
 }
 
+//CONTAINS THE ADDRESS AND THE PASSWORD OF AN WALLET IN ORDER TO SEE IT BALANCE
 #[derive(Deserialize, Serialize)]
 pub struct AddressIdentifier {
     address: String,
     password: String,
 }
 
+//SHOW THE BALLANCE OF AN WALLET BASED ON THE ADDRESS AND PASSWORD
 #[get("/wallet/balance/{address}/{password}")]
 pub async fn get_wallet_balance(
     address_identifier: Path<AddressIdentifier>,
@@ -104,6 +111,7 @@ pub async fn get_wallet_balance(
     }
 }
 
+//SHOW THE TRANSACTIONS THAT HAD BEEN MADE IN AN WALLET BASED ON THE ADDRESS AND PASSWORD
 #[get("wallet/transactions/{address}/{password}")]
 pub async fn get_wallet_transactions(
     address_identifier: Path<AddressIdentifier>,
