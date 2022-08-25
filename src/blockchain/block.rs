@@ -13,14 +13,6 @@ pub struct Block {
     pub previous_hash: String,
     pub nonce: usize,
 }
-#[derive(Deserialize, Serialize, Debug)]
-pub struct BlockInfo {
-    pub index: usize,
-    pub timestamp: u64,
-    pub transactions: Vec<BlockTransaction>,
-    pub hash: String,
-    pub previous_hash: String,
-}
 
 #[derive(Deserialize, Serialize, Debug)]
 pub struct BlockTransaction {

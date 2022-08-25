@@ -1,5 +1,5 @@
 use crate::blockchain::{
-    block::{BlockInfo, BlockTransaction},
+    block::{BlockTransaction},
     block_chain::{BLOCKCHAIN},
     transaction::{TransactionInfo},
     wallet::{MineRewardAddress, WalletInfo, WalletCoins}, block_chain_errors::BlockChainError,
@@ -37,16 +37,26 @@ pub async fn add_coins(wallet: Json<WalletCoins>) -> Result<String, BlockChainEr
     Ok(BLOCKCHAIN.lock().unwrap().add_coins(wallet.0)?)
 }
 
+
+#[derive(Deserialize, Serialize, Debug)]
+pub struct BlockInfo {
+    pub index: usize,
+    pub timestamp: u64,
+    pub transactions: Vec<BlockTransaction>,
+    pub hash: String,
+    pub previous_hash: String,
+}
+
 #[get("/blockchain/get")]
 pub async fn show_blockchain() -> Result<Json<Vec<BlockInfo>>, BlockChainError> {
     let chain = BLOCKCHAIN.lock().unwrap().chain.clone();
-    let mut show_chain = vec![];
+    let mut chain_response = vec![];
 
     for block in chain {
-        let mut show_transactions = vec![];
+        let mut transactions_response = vec![];
 
         for transaction in block.transactions {
-            show_transactions.push(BlockTransaction {
+            transactions_response.push(BlockTransaction {
                 from: transaction.from_wallet.address,
                 to: transaction.to_wallet.address,
                 amount: transaction.amount,
@@ -56,18 +66,18 @@ pub async fn show_blockchain() -> Result<Json<Vec<BlockInfo>>, BlockChainError> 
         let block_info = BlockInfo {
             index: block.index,
             timestamp: block.timestamp,
-            transactions: show_transactions,
+            transactions: transactions_response,
             hash: block.hash,
             previous_hash: block.previous_hash,
         };
 
-        show_chain.push(block_info);
+        chain_response.push(block_info);
     }
 
-    if show_chain.is_empty() {
+    if chain_response.is_empty() {
         Err(BlockChainError::ChainIsEmpty)
     } else {
-        Ok(Json(show_chain))
+        Ok(Json(chain_response))
     }
 }
 
@@ -98,8 +108,8 @@ pub async fn get_wallet_balance(
 pub async fn get_wallet_transactions(
     address_identifier: Path<AddressIdentifier>,
 ) -> Result<Json<Vec<BlockTransaction>>, BlockChainError> {
-    let address_iden = address_identifier.into_inner();
-    let (address, password) = (address_iden.address, address_iden.password);
+    let address_identifier = address_identifier.into_inner();
+    let (address, password) = (address_identifier.address, address_identifier.password);
 
     let transactions = BLOCKCHAIN
         .lock()

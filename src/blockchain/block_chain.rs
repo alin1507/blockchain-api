@@ -1,10 +1,9 @@
 use super::block_chain_errors::BlockChainError;
-use super::transaction::{TransactionInfo};
-use super::wallet::{Wallet, WalletInfo, WalletCoins};
+use super::transaction::TransactionInfo;
+use super::wallet::{Wallet, WalletCoins, WalletInfo};
 use crate::blockchain::block::Block;
 use crate::blockchain::transaction::Transaction;
 use lazy_static::lazy_static;
-use serde::{Deserialize, Serialize};
 use std::sync::Mutex;
 use std::vec;
 
@@ -14,7 +13,6 @@ lazy_static! {
 
 pub const MINING_ADDRESS: &str = "MINING";
 
-#[derive(Deserialize, Serialize, Clone, Debug)]
 pub struct BlockChain {
     pub chain: Vec<Block>,
     pub difficulty: usize,
@@ -26,8 +24,9 @@ pub struct BlockChain {
 
 impl Default for BlockChain {
     fn default() -> Self {
+        let genesis_block = Block::new(0, &vec![]);
         Self {
-            chain: vec![],
+            chain: vec![genesis_block],
             difficulty: 2,
             pending_transactions: vec![],
             mining_reward: 100,
@@ -218,10 +217,7 @@ impl BlockChain {
         None
     }
 
-    pub fn add_coins(
-        &mut self,
-        add_coins: WalletCoins
-    ) -> Result<String, BlockChainError> {
+    pub fn add_coins(&mut self, add_coins: WalletCoins) -> Result<String, BlockChainError> {
         let mut wallet = match self.get_wallet(&add_coins.address) {
             Some(wallet) => wallet,
             None => return Err(BlockChainError::WalletNotFound),
@@ -258,5 +254,3 @@ impl BlockChain {
         Ok(())
     }
 }
-
-
