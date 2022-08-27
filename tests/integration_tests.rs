@@ -145,4 +145,8 @@ fn test_blockchain() {
     assert_eq!(blockchain.chain.len(), 3);
     //CHECK NR OF TRANSACTIONS FROM THE THIRD BLOCK
     assert_eq!(blockchain.chain[2].transactions.len(), 1);
+
+    blockchain.chain = vec![Block::new(0, &vec![])];
+    blockchain.pending_transactions = vec![];
+    blockchain.wallets = vec![];
 }

@@ -45,18 +45,22 @@ pub async fn add_coins(wallet: Json<WalletCoins>) -> Result<String, BlockChainEr
 #[get("/blockchain/get")]
 pub async fn show_blockchain() -> Result<HttpResponse, BlockChainError> {
     let chain = BLOCKCHAIN.lock().unwrap().chain.clone();
-
     let mut chain_string = String::new();
 
     for block in chain {
         let mut transactions_string = String::new();
 
         for transaction in block.transactions {
-            let new = format!(
-                "   From: {}\n   To: {}\n   Amount: {}\n",
-                transaction.from_wallet.address, transaction.to_wallet.address, transaction.amount,
+            transactions_string = format!(
+                "{}\n{}",
+                transactions_string,
+                format!(
+                    "   From: {}\n   To: {}\n   Amount: {}\n",
+                    transaction.from_wallet.address,
+                    transaction.to_wallet.address,
+                    transaction.amount,
+                )
             );
-            transactions_string = format!("{}\n{}", transactions_string, new);
         }
 
         chain_string = format!(
