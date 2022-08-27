@@ -1,5 +1,4 @@
 use crypto_hash::{hex_digest, Algorithm};
-use serde::{Deserialize, Serialize};
 use std::{time::SystemTime};
 
 use crate::blockchain::transaction::Transaction;
@@ -13,14 +12,6 @@ pub struct Block {
     pub hash: String,
     pub previous_hash: String,
     pub nonce: usize,
-}
-
-//CONTAINS INFORMATION THAT CAN BE SEEN BY THE USER IN THE BLOCKCHAIN
-#[derive(Deserialize, Serialize, Debug)]
-pub struct BlockTransaction {
-    pub from: String,
-    pub to: String,
-    pub amount: u32,
 }
 
 impl Block {

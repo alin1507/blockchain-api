@@ -1,10 +1,10 @@
 use crate::blockchain::{
-    block::{BlockTransaction},
-    block_chain::{BLOCKCHAIN},
-    transaction::{TransactionInfo},
-    wallet::{MineRewardAddress, WalletInfo, WalletCoins}, block_chain_errors::BlockChainError,
+    block_chain::BLOCKCHAIN,
+    block_chain_errors::BlockChainError,
+    transaction::TransactionInfo,
+    wallet::{MineRewardAddress, WalletCoins, WalletInfo},
 };
-use actix_web::{get, post, web::Json, web::Path};
+use actix_web::{get, post, web::Json, web::Path, HttpResponse};
 use serde::{Deserialize, Serialize};
 
 //CREATE NEW TRANSACTION WITH 'FROM' ADDRESS, 'FROM' PASSWORD, 'TO' ADDRESS AND THE AMOUNT. ALL THE TRANSACTIONS THAT ARE CREATED ARE GOING TO PENDING TRANSACTIONS
@@ -41,49 +41,35 @@ pub async fn add_coins(wallet: Json<WalletCoins>) -> Result<String, BlockChainEr
     Ok(BLOCKCHAIN.lock().unwrap().add_coins(wallet.0)?)
 }
 
-//HOLDS THE INFORMATION THAT A USER IS ALLOWED TO SEE IN A BLOCKCHAIN 
-#[derive(Deserialize, Serialize, Debug)]
-pub struct BlockInfo {
-    pub index: usize,
-    pub timestamp: u64,
-    pub transactions: Vec<BlockTransaction>,
-    pub hash: String,
-    pub previous_hash: String,
-}
-
-//PARSE THE DATA TO MATCH THE 'BlockInfo' STRUCT AND SHOW THE BLOCKCHAIN
+//PARSE THE DATA AND SHOW THE BLOCKCHAIN
 #[get("/blockchain/get")]
-pub async fn show_blockchain() -> Result<Json<Vec<BlockInfo>>, BlockChainError> {
+pub async fn show_blockchain() -> Result<HttpResponse, BlockChainError> {
     let chain = BLOCKCHAIN.lock().unwrap().chain.clone();
-    let mut chain_response = vec![];
+
+    let mut chain_string = String::new();
 
     for block in chain {
-        let mut transactions_response = vec![];
+        let mut transactions_string = String::new();
 
         for transaction in block.transactions {
-            transactions_response.push(BlockTransaction {
-                from: transaction.from_wallet.address,
-                to: transaction.to_wallet.address,
-                amount: transaction.amount,
-            });
+            let new = format!(
+                "   From: {}\n   To: {}\n   Amount: {}\n",
+                transaction.from_wallet.address, transaction.to_wallet.address, transaction.amount,
+            );
+            transactions_string = format!("{}\n{}", transactions_string, new);
         }
 
-        let block_info = BlockInfo {
-            index: block.index,
-            timestamp: block.timestamp,
-            transactions: transactions_response,
-            hash: block.hash,
-            previous_hash: block.previous_hash,
-        };
-
-        chain_response.push(block_info);
+        chain_string = format!(
+            "{}{}",
+            chain_string,
+            format!(
+                "Index: {}\nTimestamp: {}\nTransactions: \n{}\nHash: {}\nPrevious hash: {}\n\n",
+                block.index, block.timestamp, transactions_string, block.hash, block.previous_hash
+            )
+        )
     }
 
-    if chain_response.is_empty() {
-        Err(BlockChainError::ChainIsEmpty)
-    } else {
-        Ok(Json(chain_response))
-    }
+    Ok(HttpResponse::Ok().body(chain_string))
 }
 
 //CONTAINS THE ADDRESS AND THE PASSWORD OF AN WALLET IN ORDER TO SEE IT BALANCE
@@ -97,7 +83,7 @@ pub struct AddressIdentifier {
 #[get("/wallet/balance/{address}/{password}")]
 pub async fn get_wallet_balance(
     address_identifier: Path<AddressIdentifier>,
-) -> Result<String, BlockChainError> {
+) -> Result<HttpResponse, BlockChainError> {
     let address_iden = address_identifier.into_inner();
     let (address, password) = (address_iden.address, address_iden.password);
 
@@ -106,7 +92,7 @@ pub async fn get_wallet_balance(
         .unwrap()
         .get_balance_of_wallet(&address, &password)
     {
-        Ok(balance) => Ok(format!("Balance for wallet {} is: {}", address, balance)),
+        Ok(balance) => Ok(HttpResponse::Ok().body(format!("Your balance is: {}", balance))),
         Err(err) => Err(err),
     }
 }
@@ -115,7 +101,7 @@ pub async fn get_wallet_balance(
 #[get("wallet/transactions/{address}/{password}")]
 pub async fn get_wallet_transactions(
     address_identifier: Path<AddressIdentifier>,
-) -> Result<Json<Vec<BlockTransaction>>, BlockChainError> {
+) -> Result<HttpResponse, BlockChainError> {
     let address_identifier = address_identifier.into_inner();
     let (address, password) = (address_identifier.address, address_identifier.password);
 
@@ -124,14 +110,22 @@ pub async fn get_wallet_transactions(
         .unwrap()
         .get_transactions_of_wallet(&address, &password)?;
 
-    let block_transactions: Vec<BlockTransaction> = transactions
-        .iter()
-        .map(|transaction_info| BlockTransaction {
-            from: transaction_info.from_address.to_string(),
-            to: transaction_info.to_address.to_string(),
-            amount: transaction_info.amount,
-        })
-        .collect();
+    if transactions.len() == 0 {
+        return Ok(HttpResponse::NotFound().body("No transactions found for this wallet!"));
+    }
 
-    Ok(Json(block_transactions))
+    let mut transactions_string = String::new();
+
+    for transaction in transactions {
+        transactions_string = format!(
+            "{}{}",
+            transactions_string,
+            format!(
+                "From: {}\nTo: {}\nAmount: {}\n\n",
+                transaction.from_address, transaction.to_address, transaction.amount,
+            )
+        );
+    }
+
+    Ok(HttpResponse::Ok().body(transactions_string))
 }
